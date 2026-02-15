@@ -41,24 +41,42 @@ function buildHtml(articles: RankedArticle[]): string {
     grouped.set(article.category, list);
   }
 
+  const palette: Record<string, string> = {
+    business: '#fef3c7',
+    tech: '#e0f2fe',
+    finance: '#ecfccb'
+  };
+
   const sections = Array.from(grouped.entries())
     .map(([category, list]) => {
+      const background = palette[category] ?? '#e2e8f0';
       const items = list
         .map(
-          (a) => `<article style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;margin:10px 0;background:#ffffff;">
-              <h3 style="margin:0 0 8px;color:#0f172a;font-size:18px;line-height:1.35;">${sanitizeText(a.title)}</h3>
-              <p style="margin:0 0 10px;color:#334155;font-size:14px;line-height:1.5;">${sanitizeText(a.summary)}</p>
-              <p style="margin:0 0 10px;color:#64748b;font-size:12px;line-height:1.4;">
-                Source: <span style="font-weight:600;color:#334155;">${sanitizeText(a.source)}</span> | ${new Date().toLocaleDateString()}
-              </p>
-              <a href="${a.url}" style="color:#0e7490;font-size:13px;font-weight:600;text-decoration:none;">Read the article on the source site</a>
+          (a) => `<article style="padding:18px 20px;border-radius:12px;margin:12px 0;background:#fff;box-shadow:0 8px 30px rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.08);">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;letter-spacing:0.2em;">${category}</span>
+                <span style="width:4rem;height:2px;background:${background};display:inline-block;border-radius:2px;"></span>
+              </div>
+              <h3 style="margin:0 0 10px;color:#0f172a;font-size:20px;line-height:1.3;">${sanitizeText(a.title)}</h3>
+              <p style="margin:0 0 12px;color:#334155;font-size:15px;line-height:1.6;">${sanitizeText(a.summary)}</p>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:#64748b;">
+                <span>Source: <strong style="color:#0f172a;">${sanitizeText(a.source)}</strong></span>
+                <span>${new Date().toLocaleDateString()}</span>
+              </div>
+              <div style="margin-top:12px;">
+                <a href="${a.url}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#14b8a6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;">
+                  Read the article on the source site
+                  <span style="font-size:12px;">↗</span>
+                </a>
+              </div>
             </article>`
         )
         .join('');
-      return `<section style="margin-top:18px;">
-        <h2 style="margin:0 0 10px;color:#0f172a;text-transform:capitalize;font-size:16px;letter-spacing:0.2px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">
-          ${category}
-        </h2>
+      return `<section style="margin-top:26px;padding:16px;border-radius:16px;background:${background};box-shadow:0 20px 60px rgba(15,23,42,0.08);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:36px;height:36px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a1f44;">${category.charAt(0).toUpperCase()}</div>
+          <h2 style="margin:0;font-size:20px;color:#0b1c3a;text-transform:capitalize;">${category}</h2>
+        </div>
         ${items}
       </section>`;
     })
@@ -102,12 +120,12 @@ function formatMailerError(error: unknown): string {
   return parts.join(' | ');
 }
 
-export async function sendDigestEmail(to: string, articles: RankedArticle[]): Promise<void> {
+export async function sendDigestEmail(recipients: string[], articles: RankedArticle[]): Promise<void> {
   try {
-    logger.info(`Attempting SMTP send to ${to.replace(/(.{2}).+(@.*)/, '$1***$2')} with ${articles.length} articles`);
+    logger.info(`Attempting SMTP send to ${recipients.join(', ')} with ${articles.length} articles`);
     const info = await getTransporter().sendMail({
       from: process.env.GMAIL_USER,
-      to,
+      to: recipients,
       subject: `Daily News Digest (${articles.length} stories)`,
       html: buildHtml(articles),
       text: articles

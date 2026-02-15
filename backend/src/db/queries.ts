@@ -78,12 +78,21 @@ export const queries = {
     stories_per_category: number;
     max_article_age_hours: number;
     skip_paywalls: number;
+    recipients: string;
   }): Promise<number> {
     return run(
       `UPDATE settings
-       SET email = ?, schedule_time = ?, top_stories_count = ?, stories_per_category = ?, max_article_age_hours = ?, skip_paywalls = ?, updated_at = CURRENT_TIMESTAMP
+       SET email = ?, schedule_time = ?, top_stories_count = ?, stories_per_category = ?, max_article_age_hours = ?, skip_paywalls = ?, recipients = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = 1`,
-      [payload.email, payload.schedule_time, payload.top_stories_count, payload.stories_per_category, payload.max_article_age_hours, payload.skip_paywalls]
+      [
+        payload.email,
+        payload.schedule_time,
+        payload.top_stories_count,
+        payload.stories_per_category,
+        payload.max_article_age_hours,
+        payload.skip_paywalls,
+        payload.recipients
+      ]
     ).then((r) => r.changes);
   },
 

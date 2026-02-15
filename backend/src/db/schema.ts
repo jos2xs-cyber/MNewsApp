@@ -51,6 +51,18 @@ function get<T>(sql: string, params: unknown[] = []): Promise<T | undefined> {
   });
 }
 
+function all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(rows as T[]);
+    });
+  });
+}
+
 export function getDb(): sqlite3.Database {
   if (!db) {
     throw new Error('Database has not been initialized');
@@ -64,7 +76,19 @@ async function seedDefaults(): Promise<void> {
      VALUES (1, '', '0 7 * * *', 10, 5, 24, 1, CURRENT_TIMESTAMP)`
   );
 
-  const domains = ['bloomberg.com', 'wsj.com', 'ft.com', 'techcrunch.com', 'theverge.com', 'reuters.com', 'cnbc.com'];
+  const domains = [
+    'bloomberg.com',
+    'wsj.com',
+    'ft.com',
+    'techcrunch.com',
+    'theverge.com',
+    'reuters.com',
+    'cnbc.com',
+    'apnews.com',
+    'npr.org',
+    'wired.com',
+    'foodnetwork.com'
+  ];
   for (const domain of domains) {
     await run('INSERT OR IGNORE INTO allowed_domains (domain, is_active) VALUES (?, 1)', [domain]);
   }
@@ -76,7 +100,11 @@ async function seedDefaults(): Promise<void> {
       ['business', 'https://www.wsj.com', 'WSJ'],
       ['finance', 'https://www.ft.com', 'Financial Times'],
       ['tech', 'https://techcrunch.com', 'TechCrunch'],
-      ['tech', 'https://www.theverge.com', 'The Verge']
+      ['tech', 'https://www.theverge.com', 'The Verge'],
+      ['ai', 'https://www.wired.com', 'Wired'],
+      ['local', 'https://www.npr.org/local/', 'NPR Local'],
+      ['food', 'https://www.foodnetwork.com', 'Food Network'],
+      ['lifestyle', 'https://www.apnews.com', 'AP News']
     ];
     for (const [category, url, name] of seeds) {
       await run('INSERT INTO sources (category, url, name, is_active) VALUES (?, ?, ?, 1)', [category, url, name]);
@@ -90,7 +118,11 @@ async function seedDefaults(): Promise<void> {
       ['business', 'Market movers'],
       ['finance', 'Interest rates'],
       ['tech', 'AI product launches'],
-      ['tech', 'Developer tools']
+      ['tech', 'Developer tools'],
+      ['ai', 'Large language models'],
+      ['lifestyle', 'Cooking trends'],
+      ['food', 'Recipe launches'],
+      ['local', 'City government updates']
     ];
     for (const [category, topic] of seeds) {
       await run('INSERT INTO topics (category, topic, is_active) VALUES (?, ?, 1)', [category, topic]);
@@ -110,31 +142,50 @@ export async function initDatabase(): Promise<void> {
     )
   `);
 
-  await run(`
+  async function recreateTableWithConstraint(tableName: string, createSql: string) {
+    const existing = await get<{ sql: string }>('SELECT sql FROM sqlite_master WHERE name = ?', [tableName]);
+    if (existing && existing.sql?.includes("'business','tech','finance'") && !existing.sql?.includes('lifestyle')) {
+      await run(`ALTER TABLE ${tableName} RENAME TO ${tableName}_old`);
+      await run(createSql);
+      await run(`INSERT INTO ${tableName} SELECT * FROM ${tableName}_old`);
+      await run(`DROP TABLE ${tableName}_old`);
+    } else {
+      await run(createSql);
+    }
+  }
+
+  await recreateTableWithConstraint(
+    'sources',
+    `
     CREATE TABLE IF NOT EXISTS sources (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food')),
       url TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `
+  );
 
-  await run(`
+  await recreateTableWithConstraint(
+    'topics',
+    `
     CREATE TABLE IF NOT EXISTS topics (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food')),
       topic TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `
+  );
 
   await run(`
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY CHECK(id = 1),
       email TEXT NOT NULL,
+      recipients TEXT DEFAULT '',
       schedule_time TEXT NOT NULL,
       top_stories_count INTEGER DEFAULT 10,
       stories_per_category INTEGER DEFAULT 5,
@@ -143,6 +194,11 @@ export async function initDatabase(): Promise<void> {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  const settingsInfo = await all<{ name: string }>('PRAGMA table_info(settings)');
+  if (!settingsInfo.some((column) => column.name === 'recipients')) {
+    await run("ALTER TABLE settings ADD COLUMN recipients TEXT DEFAULT ''");
+  }
 
   await run(`
     CREATE TABLE IF NOT EXISTS digest_history (

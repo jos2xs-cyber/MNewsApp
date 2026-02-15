@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const categorySchema = z.enum(['business', 'tech', 'finance']);
+export const categorySchema = z.enum(['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food']);
 
 export const sourceCreateSchema = z.object({
   category: categorySchema,
@@ -23,7 +23,8 @@ export const settingsUpdateSchema = z.object({
   top_stories_count: z.number().int().min(1).max(50),
   stories_per_category: z.number().int().min(1).max(20),
   max_article_age_hours: z.number().int().min(1).max(168),
-  skip_paywalls: z.boolean()
+  skip_paywalls: z.boolean(),
+  recipients: z.string().max(1024)
 });
 
 export const allowedDomainCreateSchema = z.object({
@@ -53,4 +54,25 @@ export function isDomainAllowed(hostname: string, allowedDomains: string[]): boo
     const normalized = normalizeDomain(domain);
     return normalizedHost === normalized || normalizedHost.endsWith(`.${normalized}`);
   });
+}
+
+const RECIPIENT_SPLIT = /[,\n;]+/;
+const emailSchema = z.string().email();
+
+export function parseRecipientList(raw: string): string[] {
+  return raw
+    .split(RECIPIENT_SPLIT)
+    .map((entry) => entry.trim())
+    .filter((entry): entry is string => entry.length > 0);
+}
+
+export function validateRecipientList(list: string[], limit = 3): string[] {
+  if (list.length === 0) {
+    throw new Error('Provide at least one recipient email');
+  }
+  const normalized = Array.from(new Set(list)).map((entry) => emailSchema.parse(entry));
+  if (normalized.length > limit) {
+    throw new Error(`At most ${limit} recipients allowed`);
+  }
+  return normalized;
 }

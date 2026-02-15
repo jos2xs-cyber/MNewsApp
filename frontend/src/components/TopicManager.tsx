@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTopics } from '../hooks/useTopics';
 
-const categories = ['business', 'tech', 'finance'] as const;
+const categories = ['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food'] as const;
 
 export default function TopicManager() {
   const { query, add, toggle, remove } = useTopics();
@@ -29,7 +29,10 @@ export default function TopicManager() {
       <div className="space-y-2">
         {(query.data ?? []).map((t) => (
           <div key={t.id} className="flex items-center justify-between rounded-lg border bg-white p-3">
-            <p className="text-slate-900">{t.category} - {t.topic}</p>
+            <div>
+              <p className="text-slate-900 font-medium">{t.topic}</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{t.category}</p>
+            </div>
             <div className="flex gap-2">
               <button className="rounded-md border px-3 py-1" onClick={() => toggle.mutate({ id: t.id, is_active: !t.is_active })}>{t.is_active ? 'Disable' : 'Enable'}</button>
               <button className="rounded-md border border-red-200 px-3 py-1 text-red-600" onClick={() => window.confirm('Delete topic?') && remove.mutate(t.id)}>Delete</button>

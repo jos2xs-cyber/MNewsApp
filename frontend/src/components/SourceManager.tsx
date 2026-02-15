@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSources } from '../hooks/useSources';
 
-const categories = ['business', 'tech', 'finance'] as const;
+const categories = ['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food'] as const;
 
 export default function SourceManager() {
   const { query, add, toggle, remove } = useSources();

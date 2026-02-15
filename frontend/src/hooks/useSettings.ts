@@ -8,6 +8,7 @@ export interface SettingsUpdatePayload {
   stories_per_category: number;
   max_article_age_hours: number;
   skip_paywalls: boolean;
+  recipients: string;
 }
 
 export function useSettings() {

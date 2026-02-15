@@ -1,5 +1,6 @@
 import { queries } from '../db/queries';
-import { DigestStatus, RankedArticle } from '../types';
+import { DigestStatus, RankedArticle, Settings } from '../types';
+import { parseRecipientList, validateRecipientList } from '../utils/validation';
 import { scrapeArticles } from './scraper';
 import { rankAndSummarize } from './ranker';
 import { getRunOpenAiCounter, OPENAI_LIMIT_PER_RUN, resetRunOpenAiCounter } from './summarizer';
@@ -54,10 +55,8 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
   logger.info(`OpenAI usage this run=${getRunOpenAiCounter()} totalToday=${todayOpenAICalls}`);
 
   if (sendEmail) {
-    if (!settings.email) {
-      throw new Error('Recipient email is not configured in settings');
-    }
-    await sendDigestEmail(settings.email, ranked);
+    const recipients = resolveRecipients(settings);
+    await sendDigestEmail(recipients, ranked);
   }
 
   await queries.createHistory(ranked.length, categoriesJson(ranked), JSON.stringify(ranked), sendEmail, undefined);
@@ -122,4 +121,10 @@ export function getDigestStatus(): DigestStatus {
     limit: OPENAI_LIMIT_PER_RUN,
     lastError
   };
+}
+
+function resolveRecipients(settings: Settings): string[] {
+  const explicitExtras = parseRecipientList(settings.recipients);
+  const combined = [settings.email, ...explicitExtras];
+  return validateRecipientList(combined);
 }

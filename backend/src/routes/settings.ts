@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { queries } from '../db/queries';
-import { settingsUpdateSchema } from '../utils/validation';
+import { parseRecipientList, settingsUpdateSchema, validateRecipientList } from '../utils/validation';
 import { reloadScheduler } from '../scheduler';
 
 const router = Router();
@@ -17,7 +17,12 @@ router.put('/', async (req, res, next) => {
   try {
     const payload = settingsUpdateSchema.parse(req.body);
     await queries.updateSettings({
-      ...payload,
+      email: payload.email,
+      recipients: parseRecipientList(payload.recipients).join('\n'),
+      schedule_time: payload.schedule_time,
+      top_stories_count: payload.top_stories_count,
+      stories_per_category: payload.stories_per_category,
+      max_article_age_hours: payload.max_article_age_hours,
       skip_paywalls: payload.skip_paywalls ? 1 : 0
     });
     await reloadScheduler();

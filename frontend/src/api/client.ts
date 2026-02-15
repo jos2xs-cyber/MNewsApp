@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export type Category = 'business' | 'tech' | 'finance';
+export type Category = 'business' | 'tech' | 'finance' | 'ai' | 'lifestyle' | 'local' | 'food';
 
 export interface Source {
   id: number;
@@ -33,6 +33,7 @@ export interface Settings {
   stories_per_category: number;
   max_article_age_hours: number;
   skip_paywalls: number;
+  recipients: string;
   updated_at: string;
 }
 

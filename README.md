@@ -9,7 +9,7 @@ Local-first automated news digest with:
 - SQLite configuration/history storage
 
 ## Features
-- Source CRUD (`business`, `tech`, `finance`)
+ - Source CRUD (`business`, `tech`, `finance`, `ai`, `lifestyle`, `local`, `food`)
 - Topic CRUD
 - Allowed-domain whitelist CRUD
 - Settings management (email, cron, limits, paywall skip)
@@ -49,6 +49,7 @@ Local-first automated news digest with:
    - optional LAN config:
      - `BACKEND_HOST=0.0.0.0`
      - `CORS_ORIGINS=http://localhost:5175,http://127.0.0.1:5175,http://<YOUR_PC_LAN_IP>:5175`
+   - Recipients: list up to 3 emails (comma or newline separated)
 3. Install deps at repo root:
    - `npm install`
 4. Start dev servers:

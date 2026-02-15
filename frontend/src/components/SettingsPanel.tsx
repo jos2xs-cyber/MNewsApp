@@ -9,7 +9,8 @@ export default function SettingsPanel() {
     top_stories_count: 10,
     stories_per_category: 5,
     max_article_age_hours: 24,
-    skip_paywalls: true
+    skip_paywalls: true,
+    recipients: ''
   });
 
   useEffect(() => {
@@ -20,7 +21,8 @@ export default function SettingsPanel() {
         top_stories_count: query.data.top_stories_count,
         stories_per_category: query.data.stories_per_category,
         max_article_age_hours: query.data.max_article_age_hours,
-        skip_paywalls: Boolean(query.data.skip_paywalls)
+        skip_paywalls: Boolean(query.data.skip_paywalls),
+        recipients: query.data.recipients ?? ''
       });
     }
   }, [query.data]);
@@ -33,7 +35,14 @@ export default function SettingsPanel() {
   return (
     <form className="space-y-3" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold text-slate-900">Settings</h2>
-      <input className="w-full rounded-md border p-2" type="email" placeholder="Recipient email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+      <input className="w-full rounded-md border p-2" type="email" placeholder="Primary recipient email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+      <textarea
+        className="w-full rounded-md border p-2"
+        placeholder="Additional recipients, one per line (max 3 total)"
+        value={form.recipients}
+        onChange={(e) => setForm({ ...form, recipients: e.target.value })}
+        rows={3}
+      />
       <input className="w-full rounded-md border p-2" placeholder="Cron time (m h * * *)" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} required />
       <input className="w-full rounded-md border p-2" type="number" min={1} max={50} value={form.top_stories_count} onChange={(e) => setForm({ ...form, top_stories_count: Number(e.target.value) })} />
       <input className="w-full rounded-md border p-2" type="number" min={1} max={20} value={form.stories_per_category} onChange={(e) => setForm({ ...form, stories_per_category: Number(e.target.value) })} />
