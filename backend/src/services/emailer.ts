@@ -51,6 +51,7 @@ function buildHtml(articles: RankedArticle[]): string {
               <p style="margin:0 0 10px;color:#64748b;font-size:12px;line-height:1.4;">
                 Source: <span style="font-weight:600;color:#334155;">${sanitizeText(a.source)}</span> | ${new Date().toLocaleDateString()}
               </p>
+              <a href="${a.url}" style="color:#0e7490;font-size:13px;font-weight:600;text-decoration:none;">Read the article on the source site</a>
             </article>`
         )
         .join('');
@@ -110,7 +111,7 @@ export async function sendDigestEmail(to: string, articles: RankedArticle[]): Pr
       subject: `Daily News Digest (${articles.length} stories)`,
       html: buildHtml(articles),
       text: articles
-        .map((a) => `- ${a.title}\nSource: ${a.source}\n${a.summary}`)
+        .map((a) => `- ${a.title}\nSource: ${a.source}\nRead: ${a.url}\n${a.summary}`)
         .join('\n\n')
     });
     logger.info(`SMTP send success: messageId=${info.messageId}`);
