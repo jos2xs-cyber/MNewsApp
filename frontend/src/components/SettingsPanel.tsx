@@ -36,6 +36,7 @@ export default function SettingsPanel() {
     <form className="space-y-3" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold text-slate-900">Settings</h2>
       <input className="w-full rounded-md border p-2" type="email" placeholder="Primary recipient email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+      <p className="text-xs text-slate-500">The digest will always send to this address.</p>
       <textarea
         className="w-full rounded-md border p-2"
         placeholder="Additional recipients, one per line (max 3 total)"
@@ -43,10 +44,15 @@ export default function SettingsPanel() {
         onChange={(e) => setForm({ ...form, recipients: e.target.value })}
         rows={3}
       />
+      <p className="text-xs text-slate-500">Enter other recipients (comma or newline separated).</p>
       <input className="w-full rounded-md border p-2" placeholder="Cron time (m h * * *)" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} required />
+      <p className="text-xs text-slate-500">Use cron syntax for daily send time (e.g., 0 7 * * *).</p>
       <input className="w-full rounded-md border p-2" type="number" min={1} max={50} value={form.top_stories_count} onChange={(e) => setForm({ ...form, top_stories_count: Number(e.target.value) })} />
+      <p className="text-xs text-slate-500">Max articles in each digest email.</p>
       <input className="w-full rounded-md border p-2" type="number" min={1} max={20} value={form.stories_per_category} onChange={(e) => setForm({ ...form, stories_per_category: Number(e.target.value) })} />
+      <p className="text-xs text-slate-500">Limit per category (AI/food/etc.).</p>
       <input className="w-full rounded-md border p-2" type="number" min={1} max={168} value={form.max_article_age_hours} onChange={(e) => setForm({ ...form, max_article_age_hours: Number(e.target.value) })} />
+      <p className="text-xs text-slate-500">Skip articles older than this (hours).</p>
       <label className="flex items-center gap-2 text-sm text-slate-700">
         <input type="checkbox" checked={form.skip_paywalls} onChange={(e) => setForm({ ...form, skip_paywalls: e.target.checked })} />
         Skip paywalled articles

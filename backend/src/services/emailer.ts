@@ -72,12 +72,13 @@ function buildHtml(articles: RankedArticle[]): string {
             </article>`
         )
         .join('');
-      return `<section style="margin-top:26px;padding:16px;border-radius:16px;background:${background};box-shadow:0 20px 60px rgba(15,23,42,0.08);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:36px;height:36px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a1f44;">${category.charAt(0).toUpperCase()}</div>
-          <h2 style="margin:0;font-size:20px;color:#0b1c3a;text-transform:capitalize;">${category}</h2>
+      return `<section style="margin-top:26px;border-radius:18px;background:linear-gradient(180deg,#fef3c7,#fef3c7),linear-gradient(180deg,${background},${background});box-shadow:0 20px 60px rgba(15,23,42,0.08);">
+        <div style="margin-bottom:12px;padding:12px 16px;border-radius:18px 18px 0 0;background:${background};">
+            <h2 style="margin:6px 0 0;font-size:24px;color:#0b1c3a;text-transform:capitalize;">${category}</h2>
         </div>
-        ${items}
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:16px;">
+          ${items}
+        </div>
       </section>`;
     })
     .join('');

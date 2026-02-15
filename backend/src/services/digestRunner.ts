@@ -59,7 +59,8 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
     await sendDigestEmail(recipients, ranked);
   }
 
-  await queries.createHistory(ranked.length, categoriesJson(ranked), JSON.stringify(ranked), sendEmail, undefined);
+  const centralTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
+  await queries.createHistoryWithTimestamp(centralTime, ranked.length, categoriesJson(ranked), JSON.stringify(ranked), sendEmail, undefined);
   logger.info('Digest history persisted');
 
   return {
@@ -86,7 +87,8 @@ async function execute(action: 'generate' | 'send'): Promise<DigestRunResult> {
     const message = error instanceof Error ? error.message : 'Unknown digest error';
     lastError = message;
     logger.error(`Digest run failed: action=${action} error=${message}`);
-    await queries.createHistory(0, '[]', '[]', false, message);
+    const centralTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
+    await queries.createHistoryWithTimestamp(centralTime, 0, '[]', '[]', false, message);
     return { success: false, articles_count: 0, articles: [], error: message };
   } finally {
     isRunning = false;

@@ -130,10 +130,29 @@ export const queries = {
   deleteHistory(id: number): Promise<number> {
     return run('DELETE FROM digest_history WHERE id = ?', [id]).then((r) => r.changes);
   },
-  createHistory(articlesCount: number, categoriesJson: string, articlesJson: string, sentSuccessfully: boolean, errorMessage?: string): Promise<number | undefined> {
+  createHistory(
+    articlesCount: number,
+    categoriesJson: string,
+    articlesJson: string,
+    sentSuccessfully: boolean,
+    errorMessage?: string
+  ): Promise<number | undefined> {
     return run(
       'INSERT INTO digest_history (articles_count, categories_json, articles_json, sent_successfully, error_message) VALUES (?, ?, ?, ?, ?)',
       [articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null]
+    ).then((r) => r.id);
+  },
+  createHistoryWithTimestamp(
+    generatedAt: string,
+    articlesCount: number,
+    categoriesJson: string,
+    articlesJson: string,
+    sentSuccessfully: boolean,
+    errorMessage?: string
+  ): Promise<number | undefined> {
+    return run(
+      'INSERT INTO digest_history (generated_at, articles_count, categories_json, articles_json, sent_successfully, error_message) VALUES (?, ?, ?, ?, ?, ?)',
+      [generatedAt, articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null]
     ).then((r) => r.id);
   }
 };
