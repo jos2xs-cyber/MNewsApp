@@ -1,6 +1,16 @@
 import { z } from 'zod';
 
-export const categorySchema = z.enum(['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food', 'world']);
+export const categorySchema = z.enum([
+  'business',
+  'tech',
+  'finance',
+  'ai',
+  'lifestyle',
+  'local',
+  'food',
+  'world',
+  'politics'
+]);
 
 export const sourceCreateSchema = z.object({
   category: categorySchema,

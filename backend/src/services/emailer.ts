@@ -57,7 +57,20 @@ function buildHtml(articles: RankedArticle[]): string {
     lifestyle: { tint: '#fdf2f8', accent: '#fbcfe8' },
     local: { tint: '#f9fafb', accent: '#e2e8f0' },
     food: { tint: '#fff4f4', accent: '#fecdd3' },
-    world: { tint: '#f5f5ff', accent: '#c4b5fd' }
+    world: { tint: '#f5f5ff', accent: '#c4b5fd' },
+    politics: { tint: '#fff5f5', accent: '#fecaca' }
+  };
+
+  const pillColors: Record<string, string> = {
+    business: '#fde68a',
+    tech: '#bae6fd',
+    finance: '#ecfccb',
+    ai: '#c7d2fe',
+    lifestyle: '#fbcfe8',
+    local: '#e2e8f0',
+    food: '#fecdd3',
+    world: '#c4b5fd',
+    politics: '#fecaca'
   };
 
   const newsletterTitle = 'The Two-Person Times';
@@ -77,7 +90,7 @@ function buildHtml(articles: RankedArticle[]): string {
                 <span>${new Date().toLocaleDateString()}</span>
               </div>
               <div style="margin-top:12px;">
-                <a href="${a.url}" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#14b8a6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;">
+                <a href="${a.url}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#14b8a6);color:#fff;font-size:12px;font-weight:600;text-decoration:none;">
                   Read the article on the source site
                   <span style="font-size:12px;">→</span>
                 </a>
@@ -88,7 +101,7 @@ function buildHtml(articles: RankedArticle[]): string {
       return `<section id="${category}">
         <details open style="border-radius:20px;background:${paletteEntry.tint};margin-top:26px;overflow:hidden;border:1px solid ${paletteEntry.accent};box-shadow:0 15px 50px rgba(15,23,42,0.08);">
           <summary style="list-style:none;margin:0;padding:18px 22px;font-size:22px;font-weight:700;color:#0f172a;background:${paletteEntry.tint};cursor:pointer;border-bottom:1px solid ${paletteEntry.accent};">
-            <span style="display:inline-flex;align-items:center;gap:8px;background:#fff;padding:6px 12px;border-radius:999px;border:1px solid ${paletteEntry.accent};box-shadow:0 4px 12px rgba(15,23,42,0.12);">${friendlyName(category)}</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;background:${pillColors[category] ?? '#e2e8f0'};padding:6px 12px;border-radius:999px;border:1px solid rgba(15,23,42,0.15);font-size:16px;line-height:1;">${friendlyName(category)}</span>
           </summary>
           <div style="background:#fff;padding:16px;border-top:1px solid ${paletteEntry.accent};">
             ${items}

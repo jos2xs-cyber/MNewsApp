@@ -123,6 +123,9 @@ export const queries = {
     const offset = (page - 1) * pageSize;
     return all<DigestHistory>('SELECT * FROM digest_history ORDER BY generated_at DESC LIMIT ? OFFSET ?', [pageSize, offset]);
   },
+  getLastSuccessfulHistory(): Promise<DigestHistory | undefined> {
+    return get<DigestHistory>('SELECT * FROM digest_history WHERE sent_successfully = 1 ORDER BY generated_at DESC LIMIT 1');
+  },
   countHistory(): Promise<number> {
     return get<{ count: number }>('SELECT COUNT(*) as count FROM digest_history').then((r) => r?.count ?? 0);
   },

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTopics } from '../hooks/useTopics';
 
-const categories = ['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food', 'world'] as const;
+const categories = ['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food', 'world', 'politics'] as const;
 
 export default function TopicManager() {
   const { query, add, toggle, remove } = useTopics();

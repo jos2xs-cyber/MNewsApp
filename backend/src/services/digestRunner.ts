@@ -1,5 +1,5 @@
 import { queries } from '../db/queries';
-import { DigestStatus, RankedArticle, Settings } from '../types';
+import { DigestHistory, DigestStatus, RankedArticle, Settings } from '../types';
 import { parseRecipientList, validateRecipientList } from '../utils/validation';
 import { scrapeArticles } from './scraper';
 import { rankAndSummarize } from './ranker';
@@ -30,6 +30,30 @@ function categoriesJson(articles: RankedArticle[]): string {
   return JSON.stringify(Array.from(new Set(articles.map((a) => a.category))));
 }
 
+const DEDUPE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function extractUrlsFromHistory(history?: DigestHistory): Set<string> {
+  if (!history) {
+    return new Set();
+  }
+
+  try {
+    const payload = JSON.parse(history.articles_json) as Array<{ url: string }>;
+    return new Set(payload.map((entry) => entry.url));
+  } catch (error) {
+    logger.warn('Failed to parse previous digest articles for deduplication');
+    return new Set();
+  }
+}
+
+function shouldApplyDedup(history?: DigestHistory): boolean {
+  if (!history) {
+    return false;
+  }
+  const diff = Date.now() - new Date(history.generated_at).getTime();
+  return diff >= DEDUPE_WINDOW_MS;
+}
+
 function consumeQueued(): void {
   if (!queuedRequest) {
     return;
@@ -48,8 +72,26 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
 
   resetRunOpenAiCounter();
   const articles = await scrapeArticles();
+  const lastHistory = await queries.getLastSuccessfulHistory();
+  const applyDedup = shouldApplyDedup(lastHistory);
+  const previousUrls = extractUrlsFromHistory(lastHistory);
+  let candidates = articles;
+  if (applyDedup) {
+    const filtered = articles.filter((article) => !previousUrls.has(article.url));
+    if (filtered.length === 0) {
+      logger.info('Deduplication removed all candidates; falling back to full candidate list');
+    } else {
+      candidates = filtered;
+      logger.info(
+        `Deduplication removed ${articles.length - filtered.length} articles (threshold ${DEDUPE_WINDOW_MS /
+          1000 /
+          60} min)`
+      );
+    }
+  }
+
   logger.info(`Scraper completed: candidates=${articles.length}`);
-  const ranked = await rankAndSummarize(articles, settings.top_stories_count, settings.stories_per_category);
+  const ranked = await rankAndSummarize(candidates, settings.top_stories_count, settings.stories_per_category);
   logger.info(`Ranking completed: selected=${ranked.length}`);
   todayOpenAICalls += getRunOpenAiCounter();
   logger.info(`OpenAI usage this run=${getRunOpenAiCounter()} totalToday=${todayOpenAICalls}`);

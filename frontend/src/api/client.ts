@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-export type Category = 'business' | 'tech' | 'finance' | 'ai' | 'lifestyle' | 'local' | 'food' | 'world';
+export type Category =
+  | 'business'
+  | 'tech'
+  | 'finance'
+  | 'ai'
+  | 'lifestyle'
+  | 'local'
+  | 'food'
+  | 'world'
+  | 'politics';
 
 export interface Source {
   id: number;

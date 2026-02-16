@@ -88,7 +88,8 @@ async function seedDefaults(): Promise<void> {
     'npr.org',
     'wired.com',
     'foodnetwork.com',
-    'bbc.com'
+    'bbc.com',
+    'politico.com'
   ];
   for (const domain of domains) {
     await run('INSERT OR IGNORE INTO allowed_domains (domain, is_active) VALUES (?, 1)', [domain]);
@@ -106,7 +107,8 @@ async function seedDefaults(): Promise<void> {
       ['local', 'https://www.npr.org/local/', 'NPR Local'],
       ['food', 'https://www.foodnetwork.com', 'Food Network'],
       ['lifestyle', 'https://www.apnews.com', 'AP News'],
-      ['world', 'https://www.bbc.com/news', 'BBC World News']
+      ['world', 'https://www.bbc.com/news', 'BBC World News'],
+      ['politics', 'https://www.politico.com', 'Politico']
     ];
     for (const [category, url, name] of seeds) {
       await run('INSERT INTO sources (category, url, name, is_active) VALUES (?, ?, ?, 1)', [category, url, name]);
@@ -125,7 +127,8 @@ async function seedDefaults(): Promise<void> {
       ['lifestyle', 'Cooking trends'],
       ['food', 'Recipe launches'],
       ['local', 'City government updates'],
-      ['world', 'Global affairs']
+      ['world', 'Global affairs'],
+      ['politics', 'Election coverage']
     ];
     for (const [category, topic] of seeds) {
       await run('INSERT INTO topics (category, topic, is_active) VALUES (?, ?, 1)', [category, topic]);
@@ -162,7 +165,7 @@ export async function initDatabase(): Promise<void> {
     `
     CREATE TABLE IF NOT EXISTS sources (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world','politics')),
       url TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
@@ -176,7 +179,7 @@ export async function initDatabase(): Promise<void> {
     `
     CREATE TABLE IF NOT EXISTS topics (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world','politics')),
       topic TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

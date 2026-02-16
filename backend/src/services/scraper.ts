@@ -57,6 +57,48 @@ function isLikelyArticleUrl(url: string): boolean {
   return true;
 }
 
+function isRssResponse(contentType: string | undefined, body: string): boolean {
+  const mime = contentType?.toLowerCase() ?? '';
+  if (mime.includes('xml') || mime.includes('rss') || mime.includes('atom')) {
+    return true;
+  }
+  const trimmed = body.trim().slice(0, 200).toLowerCase();
+  return trimmed.startsWith('<?xml') || trimmed.includes('<rss') || trimmed.includes('<feed');
+}
+
+function extractText($node: any, selectors: string[]): string {
+  for (const selector of selectors) {
+    const text = $node.find(selector).first().text().trim();
+    if (text.length > 0) {
+      return text;
+    }
+  }
+  return '';
+}
+
+function extractLinkFromFeed($item: any): string | null {
+  const linkSelectors = ['link', 'link[href]', 'enclosure', 'guid'];
+  for (const selector of linkSelectors) {
+    const element = $item.find(selector).first();
+    if (!element.length) {
+      continue;
+    }
+    const href = element.attr('href')?.trim();
+    if (href) {
+      return href;
+    }
+    const url = element.attr('url')?.trim();
+    if (url) {
+      return url;
+    }
+    const text = element.text().trim();
+    if (text) {
+      return text;
+    }
+  }
+  return null;
+}
+
 export async function scrapeArticles(): Promise<ArticleCandidate[]> {
   const [sources, topics, settings, allowedDomains] = await Promise.all([
     queries.listSources(),
@@ -89,6 +131,71 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
           'User-Agent': 'NewsDigestBot/1.0 (+local dashboard)'
         }
       });
+
+      const body = typeof response.data === 'string' ? response.data : '';
+      if (isRssResponse(response.headers['content-type'], body)) {
+        const $feed = cheerio.load(body, { xmlMode: true });
+        const items = $feed('item').length > 0 ? $feed('item').toArray() : $feed('entry').toArray();
+        let sourceResultCount = 0;
+        const sourceTopics = activeTopics.filter((t) => t.category === source.category);
+        const skipTopicFilter = freeCategories.includes(source.category);
+
+        for (const rawItem of items) {
+          if (sourceResultCount >= MAX_RESULTS_PER_SOURCE) {
+            break;
+          }
+          const $item = $feed(rawItem);
+          const title = normalizeTitle(
+            extractText($item, ['title'])
+          );
+          if (title.length < 12) {
+            continue;
+          }
+          const link = extractLinkFromFeed($item);
+          if (!link) {
+            continue;
+          }
+          const articleUrl = normalizeLink(source.url, link) || link;
+          if (!articleUrl || seenUrls.has(articleUrl)) {
+            continue;
+          }
+          if (!isLikelyArticleUrl(articleUrl)) {
+            continue;
+          }
+          try {
+            const parsedArticle = validateHttpsUrl(articleUrl);
+            if (!isDomainAllowed(parsedArticle.hostname, allowedDomains)) {
+              continue;
+            }
+          } catch {
+            continue;
+          }
+          if (settings.skip_paywalls === 1 && isLikelyPaywalled(articleUrl)) {
+            continue;
+          }
+          const description = extractText($item, ['description', 'summary', 'content']);
+          const snippet = (description || title).slice(0, 280);
+          const matchedTopics =
+            skipTopicFilter || sourceTopics.length === 0 ? [] : topicMatchScore(title, snippet, sourceTopics);
+          if (!skipTopicFilter && sourceTopics.length > 0 && matchedTopics.length === 0) {
+            continue;
+          }
+          const finalTopics = matchedTopics.length > 0 ? matchedTopics : ['top story'];
+
+          seenUrls.add(articleUrl);
+          results.push({
+            title,
+            url: articleUrl,
+            source: source.name,
+            category: source.category as Category,
+            snippet,
+            matchedTopics: finalTopics
+          });
+
+          sourceResultCount += 1;
+        }
+        continue;
+      }
 
       const $ = cheerio.load(response.data);
       const links = $('article a[href], h2 a[href], h3 a[href], a[href]')
