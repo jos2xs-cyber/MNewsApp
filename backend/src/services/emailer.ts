@@ -33,6 +33,14 @@ function getTransporter(): nodemailer.Transporter {
   return transporter;
 }
 
+function formatFromAddress(): string {
+  const user = process.env.GMAIL_USER?.trim();
+  if (!user) {
+    return 'The Two-Person Times';
+  }
+  return `"The Two-Person Times" <${user}>`;
+}
+
 function buildHtml(articles: RankedArticle[]): string {
   const grouped = new Map<string, RankedArticle[]>();
   for (const article of articles) {
@@ -41,56 +49,65 @@ function buildHtml(articles: RankedArticle[]): string {
     grouped.set(article.category, list);
   }
 
-  const palette: Record<string, string> = {
-    business: '#fef3c7',
-    tech: '#e0f2fe',
-    finance: '#ecfccb'
+  const palette: Record<string, { tint: string; accent: string }> = {
+    business: { tint: '#fff9f3', accent: '#fde68a' },
+    tech: { tint: '#f0f9ff', accent: '#bae6fd' },
+    finance: { tint: '#fefce8', accent: '#fde68a' },
+    ai: { tint: '#f3f4ff', accent: '#c7d2fe' },
+    lifestyle: { tint: '#fdf2f8', accent: '#fbcfe8' },
+    local: { tint: '#f9fafb', accent: '#e2e8f0' },
+    food: { tint: '#fff4f4', accent: '#fecdd3' },
+    world: { tint: '#f5f5ff', accent: '#c4b5fd' }
   };
+
+  const newsletterTitle = 'The Two-Person Times';
+  const friendlyName = (key: string) => key.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
   const sections = Array.from(grouped.entries())
     .map(([category, list]) => {
-      const background = palette[category] ?? '#e2e8f0';
+      const paletteEntry = palette[category] ?? { tint: '#eef2ff', accent: '#cbd5f5' };
       const items = list
         .map(
-          (a) => `<article style="padding:18px 20px;border-radius:12px;margin:12px 0;background:#fff;box-shadow:0 8px 30px rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.08);">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;letter-spacing:0.2em;">${category}</span>
-                <span style="width:4rem;height:2px;background:${background};display:inline-block;border-radius:2px;"></span>
-              </div>
-              <h3 style="margin:0 0 10px;color:#0f172a;font-size:20px;line-height:1.3;">${sanitizeText(a.title)}</h3>
+          (a) => `<article style="padding:18px 20px;border-radius:16px;margin:12px 0;background:#fff;box-shadow:0 18px 45px rgba(15,23,42,0.08);border:1px solid rgba(15,23,42,0.08);">
+              <h3 style="margin:0 0 10px;color:#0f172a;font-size:21px;line-height:1.4;">${sanitizeText(a.title)}</h3>
               <p style="margin:0 0 12px;color:#334155;font-size:15px;line-height:1.6;">${sanitizeText(a.summary)}</p>
-              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:#64748b;">
-                <span>Source: <strong style="color:#0f172a;">${sanitizeText(a.source)}</strong></span>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:#475569;">
+                <span style="font-weight:600;letter-spacing:0.08em;">Source</span>
+                <span><strong>${sanitizeText(a.source)}</strong></span>
                 <span>${new Date().toLocaleDateString()}</span>
               </div>
               <div style="margin-top:12px;">
-                <a href="${a.url}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#14b8a6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;">
+                <a href="${a.url}" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#14b8a6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;">
                   Read the article on the source site
-                  <span style="font-size:12px;">↗</span>
+                  <span style="font-size:12px;">→</span>
                 </a>
               </div>
             </article>`
         )
         .join('');
-      return `<section style="margin-top:26px;border-radius:18px;background:linear-gradient(180deg,#fef3c7,#fef3c7),linear-gradient(180deg,${background},${background});box-shadow:0 20px 60px rgba(15,23,42,0.08);">
-        <div style="margin-bottom:12px;padding:12px 16px;border-radius:18px 18px 0 0;background:${background};">
-            <h2 style="margin:6px 0 0;font-size:24px;color:#0b1c3a;text-transform:capitalize;">${category}</h2>
-        </div>
-        <div style="background:#fff;border-radius:0 0 18px 18px;padding:16px;">
-          ${items}
-        </div>
+      return `<section id="${category}">
+        <details open style="border-radius:20px;background:${paletteEntry.tint};margin-top:26px;overflow:hidden;border:1px solid ${paletteEntry.accent};box-shadow:0 15px 50px rgba(15,23,42,0.08);">
+          <summary style="list-style:none;margin:0;padding:18px 22px;font-size:22px;font-weight:700;color:#0f172a;background:${paletteEntry.tint};cursor:pointer;border-bottom:1px solid ${paletteEntry.accent};">
+            <span style="display:inline-flex;align-items:center;gap:8px;background:#fff;padding:6px 12px;border-radius:999px;border:1px solid ${paletteEntry.accent};box-shadow:0 4px 12px rgba(15,23,42,0.12);">${friendlyName(category)}</span>
+          </summary>
+          <div style="background:#fff;padding:16px;border-top:1px solid ${paletteEntry.accent};">
+            ${items}
+          </div>
+        </details>
       </section>`;
     })
     .join('');
 
   return `<!doctype html>
 <html>
-  <body style="font-family:'Segoe UI',Inter,Arial,sans-serif;background:#f1f5f9;padding:28px;">
-    <div style="max-width:760px;margin:0 auto;background:#fff;padding:28px;border-radius:12px;border:1px solid #e2e8f0;">
-      <h1 style="margin:0;color:#0f172a;font-size:30px;line-height:1.2;">Daily AI News Digest</h1>
-      <p style="margin:8px 0 0;color:#475569;font-size:13px;">Generated ${new Date().toLocaleString()}</p>
+  <body style="font-family:'Times New Roman',serif;background:#e2e8f0;padding:28px;">
+    <div style="max-width:820px;margin:0 auto;background:#fff;padding:28px;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 30px 60px rgba(15,23,42,0.12);">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <h1 style="margin:0;color:#0f172a;font-size:32px;line-height:1.2;font-family:'Engravers Old English BT','Times New Roman',serif;">${newsletterTitle}</h1>
+        <p style="margin:0;color:#475569;font-size:14px;">Generated ${new Date().toLocaleString()}</p>
+      </div>
       ${sections}
-      <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0 10px;" />
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:32px 0 8px;" />
       <p style="margin:0;color:#94a3b8;font-size:11px;">This digest was generated automatically by your local News Digest Manager.</p>
     </div>
   </body>
@@ -125,7 +142,7 @@ export async function sendDigestEmail(recipients: string[], articles: RankedArti
   try {
     logger.info(`Attempting SMTP send to ${recipients.join(', ')} with ${articles.length} articles`);
     const info = await getTransporter().sendMail({
-      from: process.env.GMAIL_USER,
+      from: formatFromAddress(),
       to: recipients,
       subject: `Daily News Digest (${articles.length} stories)`,
       html: buildHtml(articles),

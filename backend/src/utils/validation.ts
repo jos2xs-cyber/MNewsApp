@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const categorySchema = z.enum(['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food']);
+export const categorySchema = z.enum(['business', 'tech', 'finance', 'ai', 'lifestyle', 'local', 'food', 'world']);
 
 export const sourceCreateSchema = z.object({
   category: categorySchema,
@@ -24,7 +24,8 @@ export const settingsUpdateSchema = z.object({
   stories_per_category: z.number().int().min(1).max(20),
   max_article_age_hours: z.number().int().min(1).max(168),
   skip_paywalls: z.boolean(),
-  recipients: z.string().max(1024)
+  recipients: z.string().max(1024),
+  topic_free_categories: z.string().max(256)
 });
 
 export const allowedDomainCreateSchema = z.object({
@@ -75,4 +76,13 @@ export function validateRecipientList(list: string[], limit = 3): string[] {
     throw new Error(`At most ${limit} recipients allowed`);
   }
   return normalized;
+}
+
+const CATEGORY_SPLIT = /[,\n;]+/;
+
+export function parseCategoryList(raw: string): string[] {
+  return raw
+    .split(CATEGORY_SPLIT)
+    .map((entry) => entry.trim())
+    .filter((entry): entry is string => entry.length > 0);
 }

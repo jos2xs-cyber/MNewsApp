@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { queries } from '../db/queries';
 import { ArticleCandidate, Category, Topic } from '../types';
-import { isDomainAllowed, validateHttpsUrl } from '../utils/validation';
+import { isDomainAllowed, parseCategoryList, validateHttpsUrl } from '../utils/validation';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_LINKS_PER_SOURCE = 220;
@@ -71,6 +71,7 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
 
   const activeSources = sources.filter((s) => s.is_active === 1);
   const activeTopics = topics.filter((t) => t.is_active === 1);
+  const freeCategories = parseCategoryList(settings.topic_free_categories ?? '').map((cat) => cat.toLowerCase());
 
   const results: ArticleCandidate[] = [];
   const seenUrls = new Set<string>();
@@ -95,6 +96,7 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
         .slice(0, MAX_LINKS_PER_SOURCE);
       let sourceResultCount = 0;
       const sourceTopics = activeTopics.filter((t) => t.category === source.category);
+      const skipTopicFilter = freeCategories.includes(source.category);
 
       for (const link of links) {
         const href = $(link).attr('href');
@@ -123,8 +125,11 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
         }
 
         const snippet = title.slice(0, 280);
-        const matchedTopics = topicMatchScore(title, snippet, sourceTopics);
-        // Keep strong topic matches first, but don't drop all headlines when matches are sparse.
+        const matchedTopics =
+          skipTopicFilter || sourceTopics.length === 0 ? [] : topicMatchScore(title, snippet, sourceTopics);
+        if (!skipTopicFilter && sourceTopics.length > 0 && matchedTopics.length === 0) {
+          continue;
+        }
         const finalTopics = matchedTopics.length > 0 ? matchedTopics : ['top story'];
 
         seenUrls.add(articleUrl);

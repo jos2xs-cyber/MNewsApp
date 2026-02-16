@@ -19,6 +19,7 @@ router.put('/', async (req, res, next) => {
     await queries.updateSettings({
       email: payload.email,
       recipients: parseRecipientList(payload.recipients).join('\n'),
+      topic_free_categories: payload.topic_free_categories,
       schedule_time: payload.schedule_time,
       top_stories_count: payload.top_stories_count,
       stories_per_category: payload.stories_per_category,

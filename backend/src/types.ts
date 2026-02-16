@@ -1,4 +1,4 @@
-export type Category = 'business' | 'tech' | 'finance' | 'ai' | 'lifestyle' | 'local' | 'food';
+export type Category = 'business' | 'tech' | 'finance' | 'ai' | 'lifestyle' | 'local' | 'food' | 'world';
 
 export interface Source {
   id: number;
@@ -26,6 +26,7 @@ export interface Settings {
   max_article_age_hours: number;
   skip_paywalls: number;
   recipients: string;
+  topic_free_categories: string;
   updated_at: string;
 }
 

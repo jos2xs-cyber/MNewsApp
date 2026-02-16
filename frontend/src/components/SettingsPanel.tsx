@@ -10,7 +10,8 @@ export default function SettingsPanel() {
     stories_per_category: 5,
     max_article_age_hours: 24,
     skip_paywalls: true,
-    recipients: ''
+    recipients: '',
+    topic_free_categories: ''
   });
 
   useEffect(() => {
@@ -22,7 +23,8 @@ export default function SettingsPanel() {
         stories_per_category: query.data.stories_per_category,
         max_article_age_hours: query.data.max_article_age_hours,
         skip_paywalls: Boolean(query.data.skip_paywalls),
-        recipients: query.data.recipients ?? ''
+        recipients: query.data.recipients ?? '',
+        topic_free_categories: query.data.topic_free_categories ?? ''
       });
     }
   }, [query.data]);
@@ -45,6 +47,13 @@ export default function SettingsPanel() {
         rows={3}
       />
       <p className="text-xs text-slate-500">Enter other recipients (comma or newline separated).</p>
+      <input
+        className="w-full rounded-md border p-2"
+        placeholder="Topic-free categories (comma separated, e.g., food,local)"
+        value={form.topic_free_categories}
+        onChange={(e) => setForm({ ...form, topic_free_categories: e.target.value })}
+      />
+      <p className="text-xs text-slate-500">Articles from these categories skip manual keyword filtering.</p>
       <input className="w-full rounded-md border p-2" placeholder="Cron time (m h * * *)" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} required />
       <p className="text-xs text-slate-500">Use cron syntax for daily send time (e.g., 0 7 * * *).</p>
       <input className="w-full rounded-md border p-2" type="number" min={1} max={50} value={form.top_stories_count} onChange={(e) => setForm({ ...form, top_stories_count: Number(e.target.value) })} />

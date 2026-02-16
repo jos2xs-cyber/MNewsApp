@@ -9,6 +9,7 @@ export interface SettingsUpdatePayload {
   max_article_age_hours: number;
   skip_paywalls: boolean;
   recipients: string;
+  topic_free_categories: string;
 }
 
 export function useSettings() {

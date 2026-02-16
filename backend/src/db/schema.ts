@@ -87,7 +87,8 @@ async function seedDefaults(): Promise<void> {
     'apnews.com',
     'npr.org',
     'wired.com',
-    'foodnetwork.com'
+    'foodnetwork.com',
+    'bbc.com'
   ];
   for (const domain of domains) {
     await run('INSERT OR IGNORE INTO allowed_domains (domain, is_active) VALUES (?, 1)', [domain]);
@@ -104,7 +105,8 @@ async function seedDefaults(): Promise<void> {
       ['ai', 'https://www.wired.com', 'Wired'],
       ['local', 'https://www.npr.org/local/', 'NPR Local'],
       ['food', 'https://www.foodnetwork.com', 'Food Network'],
-      ['lifestyle', 'https://www.apnews.com', 'AP News']
+      ['lifestyle', 'https://www.apnews.com', 'AP News'],
+      ['world', 'https://www.bbc.com/news', 'BBC World News']
     ];
     for (const [category, url, name] of seeds) {
       await run('INSERT INTO sources (category, url, name, is_active) VALUES (?, ?, ?, 1)', [category, url, name]);
@@ -122,7 +124,8 @@ async function seedDefaults(): Promise<void> {
       ['ai', 'Large language models'],
       ['lifestyle', 'Cooking trends'],
       ['food', 'Recipe launches'],
-      ['local', 'City government updates']
+      ['local', 'City government updates'],
+      ['world', 'Global affairs']
     ];
     for (const [category, topic] of seeds) {
       await run('INSERT INTO topics (category, topic, is_active) VALUES (?, ?, 1)', [category, topic]);
@@ -159,7 +162,7 @@ export async function initDatabase(): Promise<void> {
     `
     CREATE TABLE IF NOT EXISTS sources (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world')),
       url TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
@@ -173,7 +176,7 @@ export async function initDatabase(): Promise<void> {
     `
     CREATE TABLE IF NOT EXISTS topics (
       id INTEGER PRIMARY KEY,
-      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food')),
+      category TEXT NOT NULL CHECK(category IN ('business','tech','finance','ai','lifestyle','local','food','world')),
       topic TEXT NOT NULL,
       is_active BOOLEAN DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -198,6 +201,9 @@ export async function initDatabase(): Promise<void> {
   const settingsInfo = await all<{ name: string }>('PRAGMA table_info(settings)');
   if (!settingsInfo.some((column) => column.name === 'recipients')) {
     await run("ALTER TABLE settings ADD COLUMN recipients TEXT DEFAULT ''");
+  }
+  if (!settingsInfo.some((column) => column.name === 'topic_free_categories')) {
+    await run("ALTER TABLE settings ADD COLUMN topic_free_categories TEXT DEFAULT ''");
   }
 
   await run(`
