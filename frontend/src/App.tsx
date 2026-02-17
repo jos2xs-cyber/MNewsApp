@@ -6,6 +6,7 @@ import DigestHistory from './components/DigestHistory';
 import TestDigestButton from './components/TestDigestButton';
 import AllowedDomainsManager from './components/AllowedDomainsManager';
 import StatusBar from './components/StatusBar';
+import WeatherBanner from './components/WeatherBanner';
 
 const tabs = ['sources', 'topics', 'domains', 'settings', 'history'] as const;
 
@@ -20,6 +21,7 @@ export default function App() {
           <TestDigestButton />
         </div>
       </header>
+      <WeatherBanner />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="rounded-lg border bg-white shadow-sm">

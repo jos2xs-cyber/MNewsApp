@@ -71,3 +71,20 @@ export interface DigestStatus {
   limit: number;
   lastError: string | null;
 }
+
+export interface WeatherDaily {
+  date: string;
+  weekday: string;
+  description: string;
+  icon: string;
+  maxTempF: number;
+  minTempF: number;
+  avgTempF: number;
+  chanceOfRain: number;
+}
+
+export interface WeatherForecast {
+  location: string;
+  updated: string;
+  forecast: WeatherDaily[];
+}

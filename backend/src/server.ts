@@ -13,6 +13,7 @@ import topicsRoutes from './routes/topics';
 import settingsRoutes from './routes/settings';
 import digestRoutes from './routes/digest';
 import historyRoutes from './routes/history';
+import weatherRoutes from './routes/weather';
 import allowedDomainsRoutes from './routes/allowedDomains';
 import healthRoutes from './routes/health';
 
@@ -101,6 +102,7 @@ app.use('/api/topics', topicsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/digest', digestRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/weather', weatherRoutes);
 app.use('/api/allowed-domains', allowedDomainsRoutes);
 app.use('/api/health', healthRoutes);
 

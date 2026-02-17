@@ -67,6 +67,23 @@ export interface DigestHistory {
   error_message: string | null;
 }
 
+export interface WeatherDaily {
+  date: string;
+  weekday: string;
+  description: string;
+  icon: string;
+  maxTempF: number;
+  minTempF: number;
+  avgTempF: number;
+  chanceOfRain: number;
+}
+
+export interface WeatherForecast {
+  location: string;
+  updated: string;
+  forecast: WeatherDaily[];
+}
+
 const apiToken = import.meta.env.VITE_API_TOKEN as string | undefined;
 const inferredBaseUrl = `${window.location.protocol}//${window.location.hostname}:3001/api`;
 

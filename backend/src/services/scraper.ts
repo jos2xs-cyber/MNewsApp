@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { queries } from '../db/queries';
 import { ArticleCandidate, Category, Topic } from '../types';
 import { isDomainAllowed, parseCategoryList, validateHttpsUrl } from '../utils/validation';
+import { sanitizeText } from '../utils/sanitize';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_LINKS_PER_SOURCE = 220;
@@ -99,6 +100,17 @@ function extractLinkFromFeed($item: any): string | null {
   return null;
 }
 
+function cleanText(raw: string): string {
+  if (!raw) {
+    return '';
+  }
+  try {
+    return cheerio.load(raw, { xmlMode: true }).text();
+  } catch {
+    return raw;
+  }
+}
+
 export async function scrapeArticles(): Promise<ArticleCandidate[]> {
   const [sources, topics, settings, allowedDomains] = await Promise.all([
     queries.listSources(),
@@ -145,9 +157,8 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
             break;
           }
           const $item = $feed(rawItem);
-          const title = normalizeTitle(
-            extractText($item, ['title'])
-          );
+          const rawTitle = normalizeTitle(extractText($item, ['title']));
+          const title = sanitizeText(cleanText(rawTitle));
           if (title.length < 12) {
             continue;
           }
@@ -174,7 +185,8 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
             continue;
           }
           const description = extractText($item, ['description', 'summary', 'content']);
-          const snippet = (description || title).slice(0, 280);
+          const rawSnippet = description || title;
+          const snippet = sanitizeText(cleanText(rawSnippet)).slice(0, 280);
           const matchedTopics =
             skipTopicFilter || sourceTopics.length === 0 ? [] : topicMatchScore(title, snippet, sourceTopics);
           if (!skipTopicFilter && sourceTopics.length > 0 && matchedTopics.length === 0) {
@@ -207,9 +219,10 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
 
       for (const link of links) {
         const href = $(link).attr('href');
-        const title = normalizeTitle(
+        const rawTitle = normalizeTitle(
           $(link).text().trim() || $(link).attr('title') || $(link).attr('aria-label') || ''
         );
+        const title = sanitizeText(cleanText(rawTitle));
         if (!href || title.length < 12) {
           continue;
         }
@@ -231,7 +244,7 @@ export async function scrapeArticles(): Promise<ArticleCandidate[]> {
           continue;
         }
 
-        const snippet = title.slice(0, 280);
+        const snippet = sanitizeText(cleanText(title)).slice(0, 280);
         const matchedTopics =
           skipTopicFilter || sourceTopics.length === 0 ? [] : topicMatchScore(title, snippet, sourceTopics);
         if (!skipTopicFilter && sourceTopics.length > 0 && matchedTopics.length === 0) {
