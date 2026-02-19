@@ -1,11 +1,12 @@
 import { queries } from '../db/queries';
-import { DigestHistory, DigestStatus, RankedArticle, Settings } from '../types';
+import { DigestHistory, DigestStatus, RankedArticle, Settings, WeatherForecast } from '../types';
 import { parseRecipientList, validateRecipientList } from '../utils/validation';
 import { scrapeArticles } from './scraper';
 import { rankAndSummarize } from './ranker';
 import { getRunOpenAiCounter, OPENAI_LIMIT_PER_RUN, resetRunOpenAiCounter } from './summarizer';
 import { sendDigestEmail } from './emailer';
 import { logger } from '../utils/logger';
+import { fetchBedfordForecast } from './weather';
 
 interface PendingRequest {
   action: 'generate' | 'send';
@@ -98,7 +99,14 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
 
   if (sendEmail) {
     const recipients = resolveRecipients(settings);
-    await sendDigestEmail(recipients, ranked);
+    let forecast: WeatherForecast | null = null;
+    try {
+      forecast = await fetchBedfordForecast();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown weather fetch error';
+      logger.warn(`Weather fetch failed for email digest. Continuing without weather section. error=${message}`);
+    }
+    await sendDigestEmail(recipients, ranked, forecast);
   }
 
   const centralTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });

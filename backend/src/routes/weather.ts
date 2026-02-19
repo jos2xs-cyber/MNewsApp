@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { fetchDallasForecast } from '../services/weather';
+import { fetchBedfordForecast } from '../services/weather';
 
 const router = Router();
 
 router.get('/', async (_req, res, next) => {
   try {
-    const forecast = await fetchDallasForecast();
+    const forecast = await fetchBedfordForecast();
     res.json(forecast);
   } catch (error) {
     next(error);

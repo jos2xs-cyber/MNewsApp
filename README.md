@@ -1,5 +1,13 @@
 # Daily AI News Digest System
 
+## Recent Changes
+- 2026-02-17: Weather forecast moved from dashboard UI to digest email content.
+- 2026-02-17: Digest email now includes a compact 3-day Dallas forecast section near the top.
+- 2026-02-17: Weather icons now use backend description-based mapping so icons render even when remote images are blocked by email clients.
+- 2026-02-17: Weather location updated to Bedford, TX for newsletter forecasts.
+- 2026-02-17: Newsletter article links now display domain-only text (full article URL remains the click target).
+- 2026-02-17: HTML entity handling fixed in text sanitization so titles do not show artifacts like `&amp;`.
+
 ## Overview
 Local-first automated news digest with:
 - Configurable source/topic/domain management UI
@@ -9,12 +17,13 @@ Local-first automated news digest with:
 - SQLite configuration/history storage
 
 ## Features
- - Source CRUD (`business`, `tech`, `finance`, `ai`, `lifestyle`, `local`, `food`)
+ - Source CRUD (`business`, `tech`, `finance`, `lifestyle`, `local`, `food`)
 - Topic CRUD
 - Allowed-domain whitelist CRUD
 - Settings management (email, cron, limits, paywall skip)
 - Digest preview/send/status endpoints
 - Digest history with pagination and deletion
+- 3-day Bedford, TX weather forecast included in digest emails (with built-in forecast icons)
 - React dashboard with tabs and live status footer
 
 ## Security features
@@ -106,6 +115,7 @@ Base URL: `http://localhost:3001/api`
 - `GET /history/:id`
 - `DELETE /history/:id`
 - `GET/POST/PUT/DELETE /allowed-domains`
+- `GET /weather`
 - `GET /health`
 
 ## Scheduler
@@ -117,6 +127,7 @@ Base URL: `http://localhost:3001/api`
 - SMTP auth errors: regenerate App Password and confirm 2FA.
 - Empty digest: verify source URLs are HTTPS and domain is allowed.
 - 409/queued response: digest run already active with queued job.
+- Weather icons in email: icons are mapped from forecast description in backend and do not depend on remote image loading.
 
 ## Development notes
 - Backend: TypeScript + Express + sqlite3
