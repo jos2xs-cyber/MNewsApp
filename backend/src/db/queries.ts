@@ -124,7 +124,9 @@ export const queries = {
     return all<DigestHistory>('SELECT * FROM digest_history ORDER BY generated_at DESC LIMIT ? OFFSET ?', [pageSize, offset]);
   },
   getLastSuccessfulHistory(): Promise<DigestHistory | undefined> {
-    return get<DigestHistory>('SELECT * FROM digest_history WHERE sent_successfully = 1 ORDER BY generated_at DESC LIMIT 1');
+    return get<DigestHistory>(
+      "SELECT * FROM digest_history WHERE sent_successfully = 1 AND run_type = 'scheduled' ORDER BY generated_at DESC LIMIT 1"
+    );
   },
   countHistory(): Promise<number> {
     return get<{ count: number }>('SELECT COUNT(*) as count FROM digest_history').then((r) => r?.count ?? 0);
@@ -140,11 +142,12 @@ export const queries = {
     categoriesJson: string,
     articlesJson: string,
     sentSuccessfully: boolean,
-    errorMessage?: string
+    errorMessage?: string,
+    runType?: string
   ): Promise<number | undefined> {
     return run(
-      'INSERT INTO digest_history (articles_count, categories_json, articles_json, sent_successfully, error_message) VALUES (?, ?, ?, ?, ?)',
-      [articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null]
+      'INSERT INTO digest_history (articles_count, categories_json, articles_json, sent_successfully, error_message, run_type) VALUES (?, ?, ?, ?, ?, ?)',
+      [articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null, runType ?? null]
     ).then((r) => r.id);
   },
   createHistoryWithTimestamp(
@@ -153,11 +156,12 @@ export const queries = {
     categoriesJson: string,
     articlesJson: string,
     sentSuccessfully: boolean,
-    errorMessage?: string
+    errorMessage?: string,
+    runType?: string
   ): Promise<number | undefined> {
     return run(
-      'INSERT INTO digest_history (generated_at, articles_count, categories_json, articles_json, sent_successfully, error_message) VALUES (?, ?, ?, ?, ?, ?)',
-      [generatedAt, articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null]
+      'INSERT INTO digest_history (generated_at, articles_count, categories_json, articles_json, sent_successfully, error_message, run_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [generatedAt, articlesCount, categoriesJson, articlesJson, sentSuccessfully ? 1 : 0, errorMessage ?? null, runType ?? null]
     ).then((r) => r.id);
   }
 };

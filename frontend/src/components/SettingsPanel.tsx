@@ -1,6 +1,14 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useSettings } from '../hooks/useSettings';
 
+function getMutationErrorMessage(error: unknown): string {
+  const maybeAxios = error as {
+    response?: { data?: { error?: string } };
+    message?: string;
+  };
+  return maybeAxios.response?.data?.error ?? maybeAxios.message ?? 'Failed to save settings.';
+}
+
 export default function SettingsPanel() {
   const { query, save } = useSettings();
   const [form, setForm] = useState({
@@ -55,7 +63,8 @@ export default function SettingsPanel() {
       />
       <p className="text-xs text-slate-500">Articles from these categories skip manual keyword filtering.</p>
       <input className="w-full rounded-md border p-2" placeholder="Cron time (m h * * *)" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} required />
-      <p className="text-xs text-slate-500">Use cron syntax for daily send time (e.g., 0 7 * * *).</p>
+      <p className="text-xs text-slate-500">Use cron syntax: minute hour day month weekday. Example 7:30 AM daily is <code>30 7 * * *</code>.</p>
+      {save.isError ? <p className="text-sm text-red-600">{getMutationErrorMessage(save.error)}</p> : null}
       <input className="w-full rounded-md border p-2" type="number" min={1} max={50} value={form.top_stories_count} onChange={(e) => setForm({ ...form, top_stories_count: Number(e.target.value) })} />
       <p className="text-xs text-slate-500">Max articles in each digest email.</p>
       <input className="w-full rounded-md border p-2" type="number" min={1} max={20} value={form.stories_per_category} onChange={(e) => setForm({ ...form, stories_per_category: Number(e.target.value) })} />

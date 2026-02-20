@@ -11,6 +11,8 @@ let openAiClient: OpenAI | null = null;
 let anthropicClient: Anthropic | null = null;
 
 type Provider = 'openai' | 'anthropic';
+const OVERLOAD_RETRY_ATTEMPTS = 3;
+const OVERLOAD_RETRY_BASE_DELAY_MS = 1000;
 
 export function resetRunOpenAiCounter(): void {
   runCallCount = 0;
@@ -126,24 +128,66 @@ function shouldFallback(error: unknown): boolean {
   );
 }
 
+function isOverloadError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const withMeta = error as Error & { status?: number; code?: string };
+  const lower = error.message.toLowerCase();
+  return (
+    withMeta.status === 529 ||
+    withMeta.status === 503 ||
+    withMeta.code === 'overloaded_error' ||
+    lower.includes('overloaded') ||
+    lower.includes('529') ||
+    lower.includes('503')
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withOverloadRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= OVERLOAD_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      const wrapped = error instanceof Error ? error : new Error('Unknown AI provider error');
+      lastError = wrapped;
+      const shouldRetry = attempt < OVERLOAD_RETRY_ATTEMPTS && isOverloadError(wrapped);
+      if (!shouldRetry) {
+        throw wrapped;
+      }
+      await sleep(OVERLOAD_RETRY_BASE_DELAY_MS * attempt);
+    }
+  }
+  throw lastError ?? new Error('Unknown AI provider error');
+}
+
 async function summarizeWithOpenAI(prompt: string): Promise<string> {
   const model = process.env.OPENAI_MODEL ?? 'gpt-5.2';
-  const response = await getOpenAiClient().responses.create({
-    model,
-    input: prompt,
-    max_output_tokens: 220
-  });
+  const response = await withOverloadRetry(() =>
+    getOpenAiClient().responses.create({
+      model,
+      input: prompt,
+      max_output_tokens: 220
+    })
+  );
   return response.output_text || '';
 }
 
 async function summarizeWithAnthropic(prompt: string): Promise<string> {
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest';
-  const response = await getAnthropicClient().messages.create({
-    model,
-    max_tokens: 220,
-    temperature: 0.2,
-    messages: [{ role: 'user', content: prompt }]
-  });
+  const response = await withOverloadRetry(() =>
+    getAnthropicClient().messages.create({
+      model,
+      max_tokens: 220,
+      temperature: 0.2,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  );
 
   const texts: string[] = [];
   for (const block of response.content) {

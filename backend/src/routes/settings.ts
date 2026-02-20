@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { ZodError } from 'zod';
 import { queries } from '../db/queries';
 import { parseRecipientList, settingsUpdateSchema, validateRecipientList } from '../utils/validation';
 import { reloadScheduler } from '../scheduler';
@@ -29,6 +30,16 @@ router.put('/', async (req, res, next) => {
     await reloadScheduler();
     res.json({ success: true });
   } catch (error) {
+    if (error instanceof ZodError) {
+      const scheduleIssue = error.issues.find((issue) => issue.path.join('.') === 'schedule_time');
+      if (scheduleIssue) {
+        res.status(400).json({
+          error:
+            "Invalid schedule_time. Use 5-part cron: 'minute hour day month weekday'. Example for 7:30 AM daily: '30 7 * * *'."
+        });
+        return;
+      }
+    }
     next(error);
   }
 });

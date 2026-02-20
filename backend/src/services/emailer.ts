@@ -152,18 +152,19 @@ function buildHtml(articles: RankedArticle[], weather: WeatherForecast | null): 
   const friendlyName = (key: string) => key.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   const weatherSection = buildWeatherSection(weather);
   const categoryOrder = ['food', 'local', 'business', 'tech', 'finance', 'ai', 'lifestyle', 'world', 'politics'];
+  const orderedCategories = Array.from(grouped.keys()).sort((a, b) => {
+    const ai = categoryOrder.indexOf(a);
+    const bi = categoryOrder.indexOf(b);
+    const aRank = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+    const bRank = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+    if (aRank !== bRank) {
+      return aRank - bRank;
+    }
+    return a.localeCompare(b);
+  });
 
   const sections = Array.from(grouped.entries())
-    .sort(([a], [b]) => {
-      const ai = categoryOrder.indexOf(a);
-      const bi = categoryOrder.indexOf(b);
-      const aRank = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
-      const bRank = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
-      if (aRank !== bRank) {
-        return aRank - bRank;
-      }
-      return a.localeCompare(b);
-    })
+    .sort(([a], [b]) => orderedCategories.indexOf(a) - orderedCategories.indexOf(b))
     .map(([category, list], index) => {
       const paletteEntry = palette[category] ?? { tint: '#eef2ff', accent: '#cbd5f5' };
       const topSpacing = index === 0 ? '38px' : '26px';
@@ -181,7 +182,7 @@ function buildHtml(articles: RankedArticle[], weather: WeatherForecast | null): 
             </article>`
         )
         .join('');
-      return `<section id="${category}">
+      return `<section>
         <details open style="border-radius:20px;background:${paletteEntry.tint};margin-top:${topSpacing};overflow:hidden;border:1px solid ${paletteEntry.accent};box-shadow:0 15px 50px rgba(15,23,42,0.08);">
           <summary style="list-style:none;margin:0;padding:18px 22px;font-size:22px;font-weight:700;color:#0f172a;background:${paletteEntry.tint};cursor:pointer;border-bottom:1px solid ${paletteEntry.accent};">
             <span style="display:inline-flex;align-items:center;gap:8px;background:${pillColors[category] ?? '#e2e8f0'};padding:6px 12px;border-radius:999px;border:1px solid rgba(15,23,42,0.15);font-size:16px;line-height:1;">${friendlyName(category)}</span>

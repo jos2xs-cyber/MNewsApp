@@ -217,9 +217,15 @@ export async function initDatabase(): Promise<void> {
       categories_json TEXT NOT NULL,
       articles_json TEXT NOT NULL,
       sent_successfully BOOLEAN NOT NULL,
+      run_type TEXT,
       error_message TEXT
     )
   `);
+
+  const digestHistoryInfo = await all<{ name: string }>('PRAGMA table_info(digest_history)');
+  if (!digestHistoryInfo.some((column) => column.name === 'run_type')) {
+    await run('ALTER TABLE digest_history ADD COLUMN run_type TEXT');
+  }
 
   await run(`
     CREATE TABLE IF NOT EXISTS allowed_domains (
@@ -232,6 +238,7 @@ export async function initDatabase(): Promise<void> {
   await run('CREATE INDEX IF NOT EXISTS idx_sources_category_active ON sources(category, is_active)');
   await run('CREATE INDEX IF NOT EXISTS idx_topics_category_active ON topics(category, is_active)');
   await run('CREATE INDEX IF NOT EXISTS idx_history_generated_at ON digest_history(generated_at DESC)');
+  await run('CREATE INDEX IF NOT EXISTS idx_history_sent_type_generated ON digest_history(sent_successfully, run_type, generated_at DESC)');
   await run('CREATE INDEX IF NOT EXISTS idx_domains_active ON allowed_domains(domain, is_active)');
 
   await seedDefaults();

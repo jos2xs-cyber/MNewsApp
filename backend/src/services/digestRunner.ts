@@ -10,6 +10,7 @@ import { fetchBedfordForecast } from './weather';
 
 interface PendingRequest {
   action: 'generate' | 'send';
+  trigger: 'manual' | 'scheduled';
 }
 
 export interface DigestRunResult {
@@ -61,11 +62,11 @@ function consumeQueued(): void {
   }
   const queued = queuedRequest;
   queuedRequest = null;
-  execute(queued.action).catch(() => undefined);
+  execute(queued.action, queued.trigger).catch(() => undefined);
 }
 
-async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
-  logger.info(`Digest run started: mode=${sendEmail ? 'send' : 'generate'}`);
+async function runDigest(sendEmail: boolean, trigger: 'manual' | 'scheduled'): Promise<DigestRunResult> {
+  logger.info(`Digest run started: mode=${sendEmail ? 'send' : 'generate'} trigger=${trigger}`);
   const settings = await queries.getSettings();
   if (!settings) {
     throw new Error('Settings are missing');
@@ -110,7 +111,16 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
   }
 
   const centralTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
-  await queries.createHistoryWithTimestamp(centralTime, ranked.length, categoriesJson(ranked), JSON.stringify(ranked), sendEmail, undefined);
+  const runType = sendEmail ? trigger : 'generate';
+  await queries.createHistoryWithTimestamp(
+    centralTime,
+    ranked.length,
+    categoriesJson(ranked),
+    JSON.stringify(ranked),
+    sendEmail,
+    undefined,
+    runType
+  );
   logger.info('Digest history persisted');
 
   return {
@@ -120,25 +130,26 @@ async function runDigest(sendEmail: boolean): Promise<DigestRunResult> {
   };
 }
 
-async function execute(action: 'generate' | 'send'): Promise<DigestRunResult> {
+async function execute(action: 'generate' | 'send', trigger: 'manual' | 'scheduled'): Promise<DigestRunResult> {
   if (isRunning) {
     if (queuedRequest) {
       return { success: false, queued: true, articles_count: 0, articles: [], error: 'Digest already has a queued run' };
     }
-    queuedRequest = { action };
+    queuedRequest = { action, trigger };
     return { success: true, queued: true, articles_count: 0, articles: [] };
   }
 
   isRunning = true;
   lastError = null;
   try {
-    return await runDigest(action === 'send');
+    return await runDigest(action === 'send', trigger);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown digest error';
     lastError = message;
     logger.error(`Digest run failed: action=${action} error=${message}`);
     const centralTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
-    await queries.createHistoryWithTimestamp(centralTime, 0, '[]', '[]', false, message);
+    const runType = action === 'send' ? trigger : 'generate';
+    await queries.createHistoryWithTimestamp(centralTime, 0, '[]', '[]', false, message, runType);
     return { success: false, articles_count: 0, articles: [], error: message };
   } finally {
     isRunning = false;
@@ -147,11 +158,11 @@ async function execute(action: 'generate' | 'send'): Promise<DigestRunResult> {
 }
 
 export async function generateDigestNow(): Promise<DigestRunResult> {
-  return execute('generate');
+  return execute('generate', 'manual');
 }
 
-export async function sendDigestNow(): Promise<DigestRunResult> {
-  return execute('send');
+export async function sendDigestNow(trigger: 'manual' | 'scheduled' = 'manual'): Promise<DigestRunResult> {
+  return execute('send', trigger);
 }
 
 export function setSchedulerStatus(running: boolean, next: string | null): void {

@@ -38,7 +38,7 @@ export async function reloadScheduler(): Promise<void> {
   }
 
   digestTask = cron.schedule(settings.schedule_time, async () => {
-    await sendDigestNow();
+    await sendDigestNow('scheduled');
     setSchedulerStatus(true, estimateNextRun(settings.schedule_time));
   });
 

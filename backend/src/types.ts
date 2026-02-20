@@ -43,6 +43,7 @@ export interface DigestHistory {
   categories_json: string;
   articles_json: string;
   sent_successfully: number;
+  run_type: string | null;
   error_message: string | null;
 }
 

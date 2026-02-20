@@ -21,6 +21,15 @@ router.post('/', async (req, res, next) => {
     const id = await queries.createSource(payload.category, payload.url, payload.name);
     res.status(201).json({ id, domain_auto_added: true });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('UNIQUE constraint failed: sources.url')
+    ) {
+      res.status(409).json({
+        error: 'Source URL already exists. Use the existing source entry or edit its category/name.'
+      });
+      return;
+    }
     next(error);
   }
 });
